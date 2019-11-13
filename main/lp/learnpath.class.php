@@ -3191,10 +3191,26 @@ class learnpath
             }
         }
 
-        $list['are_parents'] = $listParent;
-        $list['not_parents'] = $listNotParent;
+        //merge array
+        $list = array_merge($listParent,$listNotParent);
+        //order array por item previous and next
+        self::aasort($list,"previous");
 
         return $list;
+    }
+
+    function aasort(&$array, $key) {
+        $sorter=array();
+        $ret=array();
+        reset($array);
+        foreach ($array as $ii => $va) {
+            $sorter[$ii]=$va[$key];
+        }
+        asort($sorter);
+        foreach ($sorter as $ii => $va) {
+            $ret[$ii]=$array[$ii];
+        }
+        $array=$ret;
     }
 
     /**

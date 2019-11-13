@@ -129,6 +129,7 @@ See https://support.chamilo.org/issues/6976
 .scorm_item_normal {
     line-height: 25px;
     border-bottom: 1px solid #DDD;
+    border-top: 1px solid #DDD;
     padding: 10px 0;
 }
 
@@ -606,19 +607,25 @@ See https://support.chamilo.org/issues/6976
 }
 
 .scorm-collapse .panel-default .panel-heading {
-    background: url(../../main/img/icons/svg/arrow-down.svg) #FFF right center no-repeat;
+    background: url(../../main/img/icons/svg/arrow-down.svg) transparent right center no-repeat;
     padding-top: 0;
     padding-bottom: 0;
 }
 
 .scorm-collapse a.item-header {
-    padding-bottom: 4px;
-    padding-top: 10px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+}
+
+.scorm-collapse .panel-default{
+    background-color: #eaeaea;
+    border-color: #cccccc;
 }
 
 .scorm-collapse .panel-default .panel-heading h4 {
-    font-size: 18px;
+    font-size: 1.5rem;
     font-weight: 600;
+    margin: 5px 0;
 }
 
 .scorm-collapse a {
@@ -642,7 +649,7 @@ See https://support.chamilo.org/issues/6976
 }
 
 .scorm-collapse .panel-body .list li {
-    padding: 15px 30px 15px 20px;
+    padding: 10px 0;
     border-bottom: 1px solid #dddddd;
     margin-bottom: 0;
 }
@@ -652,7 +659,7 @@ See https://support.chamilo.org/issues/6976
 }
 
 .scorm_item_normal.scorm_completed {
-    background: url(../../main/img/icons/svg/check-completed.svg) #F5F5F5 right center no-repeat;
+    background: url(../../main/img/icons/svg/check-completed.svg) #FFF right center no-repeat;
 }
 
 .scorm_item_normal.scorm_not_attempted {
