@@ -1,3 +1,4 @@
+
 {% if data_list is not empty %}
 <div id="learning_path_toc" class="scorm-list">
     <div class="scorm-title">

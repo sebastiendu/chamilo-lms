@@ -140,6 +140,7 @@ class learnpath
                 error_log('learnpath::__construct() '.__LINE__.' - Querying lp: '.$sql, 0);
             }
             $res = Database::query($sql);
+
             if (Database::num_rows($res) > 0) {
                 $this->lp_id = $lp_id;
                 $row = Database::fetch_array($res);
@@ -2986,6 +2987,7 @@ class learnpath
     public function get_toc()
     {
         $toc = [];
+
         foreach ($this->ordered_items as $item_id) {
             // TODO: Change this link generation and use new function instead.
             $toc[] = [
@@ -2997,6 +2999,8 @@ class learnpath
                 'description' => $this->items[$item_id]->get_description(),
                 'path' => $this->items[$item_id]->get_path(),
                 'parent' => $this->items[$item_id]->get_parent(),
+                'next' => $this->items[$item_id]->get_next(),
+                'previous' => $this->items[$item_id]->get_previous()
             ];
         }
 

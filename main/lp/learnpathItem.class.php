@@ -453,6 +453,31 @@ class learnpathItem
     }
 
     /**
+     * Gets the item's next item.
+     *
+     * @return int next
+     */
+    public function get_next(){
+        if(empty($this->next)){
+            return 0;
+        }
+        return $this->next;
+    }
+
+    /**
+     * Gets the item's next item.
+     *
+     * @return int next
+     */
+    public function get_previous(){
+        if(empty($this->previous)){
+            return 0;
+        }
+        return $this->previous;
+    }
+
+
+    /**
      * Gets the file path from the course's root directory, no matter what
      * tool it is from.
      *
