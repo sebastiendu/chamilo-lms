@@ -3134,6 +3134,7 @@ class learnpath
      * @return array HTML TOC ready to display
      */
     public function getBuildTree(array $elements, $parentId = null){
+
         $branch = array();
         $dirTypes = self::getChapterTypes();
         $currentID = $this->get_current_item_id();
@@ -3172,13 +3173,14 @@ class learnpath
 
             if ((string)$element['parent']  === (string)$parentId) {
                 $children = self::getBuildTree($elements, $element['id']);
+
                 if($children){
                     $element['children'] = $children;
                 }
-
                 $branch[] = $element;
             }
         }
+
         return $branch;
     }
 
