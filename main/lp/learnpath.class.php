@@ -3124,6 +3124,48 @@ class learnpath
         ];
     }
 
+    public function getListMenuTreeParent(array $lists, $parent = 0){
+
+        $html = '<ul>';
+        foreach ($lists as $list){
+            $html.= '<li>';
+            //Traemos el titulo del padre
+
+            $html.= '<a class="btn btn-default btn-block" role="button" data-toggle="collapse" href="#collapseExample" aria-expanded="false" aria-controls="collapseExample">';
+            $html.= $list['id'].'/'.$list['parent'].' '.$list['title'];
+            $html.= '</a>';
+
+
+            if(isset($list['children']) && is_array($list['children'])){
+                //Traemos todos los hijos
+                $html.= $this->getListMenuTreeChildren($list['children'], $list['parent']);
+            }
+            $html.= '</li>';
+        }
+        $html.= '</ul>';
+
+        return $html;
+    }
+
+    public function getListMenuTreeChildren(array $lists, $parent = 0){
+
+        $html = '<ul>';
+        foreach ($lists as $list){
+            $html.= '<li>';
+            //Traemos el titulo del padre
+
+            $html.= $list['id'].'/'.$list['parent'].' '.$list['title'];
+
+            if(isset($list['children']) && is_array($list['children'])){
+                //Traemos todos los hijos
+                $html.= $this->getListMenuTreeChildren($list['children'], $list['parent']);
+            }
+            $html.= '</li>';
+        }
+        $html.= '</ul>';
+
+        return $html;
+    }
     /**
      * Bring the lesson items tree.
      *

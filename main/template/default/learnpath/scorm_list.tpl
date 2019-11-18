@@ -37,7 +37,7 @@
     </div>
     <div class="panel-group" role="tablist" aria-multiselectable="true">
         <ul class="scorm-collapse-list">
-        {{ dump(data_panel) }}
+        {{ data_panel }}
         </ul>
     </div>
 </div>
