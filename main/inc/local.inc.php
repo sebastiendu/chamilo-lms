@@ -244,24 +244,65 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
     }
 
     // IF cas is activated and user isn't logged in
-    if (api_get_setting('cas_activate') == 'true') {
-        $cas_activated = true;
-    } else {
-        $cas_activated = false;
-    }
+    $casUser = false;
+    if ('true' === api_get_setting('cas_activate')
+        && !isset($_user['user_id'])
+        && !isset($_POST['login'])
+        && !$logout
+    ) {
 
-    $cas_login = false;
-    if ($cas_activated && !isset($_user['user_id']) && !isset($_POST['login']) && !$logout) {
-        require_once(api_get_path(SYS_PATH).'main/auth/cas/authcas.php');
-        $cas_login = cas_is_authenticated();
-    }
+        // load the CAS system to authenticate the user
+        require_once api_get_path(SYS_PATH).'main/auth/cas/cas_var.inc.php';
 
-    if ((isset($_POST['login']) && isset($_POST['password'])) || ($cas_login)) {
+        // redirect to CAS server if not authenticated yet and so configured
+        if (is_array($cas) && array_key_exists('force_redirect', $cas) && $cas['force_redirect']) {
+            phpCAS::forceAuthentication();
+        }
 
-        // $login && $password are given to log in
-        if ($cas_login && empty($_POST['login'])) {
-            $login = $cas_login;
+        // check whether we are authenticated
+        if (phpCAS::isAuthenticated()) {
+
+            // the user was successfully authenticated by the CAS server, read its CAS user identification
+            $casUser = phpCAS::getUser();
+
+            // make sure the user exists in the database
+            $login = UserManager::casUserLoginName($casUser);
+            if (false === $login) {
+                // the CAS-authenticated user does not yet exist in internal database
+
+                // see whether we are supposed to create it
+                switch (api_get_setting("cas_add_user_activate")) {
+
+                    case PLATFORM_AUTH_SOURCE:
+                        // create the new user from its CAS user identifier
+                        $login = UserManager::createCASAuthenticatedUserFromScratch($casUser);
+                        break;
+
+                    case LDAP_AUTH_SOURCE:
+                        // find the new user's LDAP record from its CAS user identifier and copy information
+                        $login = UserManager::createCASAuthenticatedUserFromLDAP($casUser);
+                        break;
+
+                    default:
+                        // no automatic user creation is configured, just complain about it
+                        throw new Exception(get_lang('NoUserMatched'));
+                }
+            }
+
+            // $login is set and the user exists in the database
+
+            // update the user record from LDAP if so required by settings
+            if ('true' === api_get_setting("update_user_info_cas_with_ldap")) {
+                UserManager::updateUserFromLDAP($login);
+            }
         } else {
+            // not CAS authenticated
+        }
+    }
+
+    if ((isset($_POST['login']) && isset($_POST['password'])) || ($casUser)) {
+        // $login && $password are given to log in
+        if (empty($login) || !empty($_POST['login'])) {
             $login = $_POST['login'];
             $password = $_POST['password'];
         }
@@ -334,14 +375,18 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
             if ($uData['auth_source'] == PLATFORM_AUTH_SOURCE ||
                 $uData['auth_source'] == CAS_AUTH_SOURCE
             ) {
-                $validPassword = UserManager::isPasswordValid(
+                $validPassword = isset($password) && UserManager::isPasswordValid(
                     $uData['password'],
                     $password,
                     $uData['salt']
                 );
 
                 // Check the user's password
+<<<<<<< HEAD
                 if (($validPassword || $cas_login) &&
+=======
+                if (($validPassword || $casUser || $checkUserFromExternalWebservice) &&
+>>>>>>> 5df5a8f077... existing CAS integration reimplemented - refs BT#16484
                     (trim($login) == $uData['username'])
                 ) {
                     $update_type = UserManager::get_extra_user_data_by_field(
@@ -397,8 +442,14 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                                         // https://support.chamilo.org/issues/6124
                                         $location = api_get_path(WEB_PATH)
                                             .'index.php?loginFailed=1&error=access_url_inactive';
+<<<<<<< HEAD
                                         if ($cas_login) {
                                             cas_logout(null, $location);
+=======
+                                        if ($casUser) {
+                                            phpCAS::logoutWithRedirectService($location);
+                                            Event::courseLogout($logoutInfo);
+>>>>>>> 5df5a8f077... existing CAS integration reimplemented - refs BT#16484
                                         } else {
                                             header('Location: '.$location);
                                         }
@@ -1229,7 +1280,12 @@ if ((isset($uidReset) && $uidReset) || (isset($cidReset) && $cidReset)) {
                     $is_sessionAdmin     = true;
                 } else {
                     // Am I a session coach for this session?
+<<<<<<< HEAD
                     $sql = "SELECT session.id, session.id_coach FROM $tbl_session session
+=======
+                    $sql = "SELECT session.id, session.id_coach
+                            FROM $tbl_session session
+>>>>>>> 5df5a8f077... existing CAS integration reimplemented - refs BT#16484
                             INNER JOIN $tbl_session_course sc
                             ON sc.session_id = session.id
                             WHERE session.id = $session_id
@@ -1477,7 +1533,7 @@ if (isset($_cid)) {
 }
 
 // direct login to course
-if ((isset($cas_login) && $cas_login && exist_firstpage_parameter()) ||
+if ((isset($casUser) && $casUser && exist_firstpage_parameter()) ||
     ($logging_in && exist_firstpage_parameter())
 ) {
     $redirectCourseDir = api_get_firstpage_parameter();

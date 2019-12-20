@@ -152,6 +152,22 @@ function online_logout($user_id = null, $logout_redirect = false)
     CourseChatUtils::exitChat($user_id);
     session_regenerate_id();
     Session::destroy();
+
+    $pluginKeycloak = api_get_plugin_setting('keycloak', 'tool_enable') === 'true';
+    if ($pluginKeycloak && $uinfo['auth_source'] === 'keycloak') {
+        $pluginUrl = api_get_path(WEB_PLUGIN_PATH).'keycloak/start.php?slo';
+        header('Location: '.$pluginUrl);
+        exit;
+    }
+
+    if (api_is_cas_activated())
+    {
+        require_once __DIR__.'/../../auth/cas/cas_var.inc.php';
+        if (phpCas::isInitialized()) {
+            phpCAS::logout();
+        }
+    }
+
     if ($logout_redirect) {
         header("Location: ".api_get_path(WEB_PATH)."index.php");
         exit;
