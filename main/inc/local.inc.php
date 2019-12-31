@@ -383,7 +383,7 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                 );
 
                 // Check the user's password
-                if (($validPassword || $cas_login) &&
+                if (($validPassword || $casUser) &&
                     (trim($login) == $uData['username'])
                 ) {
                     $update_type = UserManager::get_extra_user_data_by_field(
