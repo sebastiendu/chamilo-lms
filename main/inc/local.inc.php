@@ -382,11 +382,7 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                 );
 
                 // Check the user's password
-<<<<<<< HEAD
                 if (($validPassword || $cas_login) &&
-=======
-                if (($validPassword || $casUser || $checkUserFromExternalWebservice) &&
->>>>>>> 5df5a8f077... existing CAS integration reimplemented - refs BT#16484
                     (trim($login) == $uData['username'])
                 ) {
                     $update_type = UserManager::get_extra_user_data_by_field(
@@ -442,14 +438,10 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                                         // https://support.chamilo.org/issues/6124
                                         $location = api_get_path(WEB_PATH)
                                             .'index.php?loginFailed=1&error=access_url_inactive';
-<<<<<<< HEAD
-                                        if ($cas_login) {
-                                            cas_logout(null, $location);
-=======
                                         if ($casUser) {
                                             phpCAS::logoutWithRedirectService($location);
                                             Event::courseLogout($logoutInfo);
->>>>>>> 5df5a8f077... existing CAS integration reimplemented - refs BT#16484
+                                            cas_logout(null, $location);
                                         } else {
                                             header('Location: '.$location);
                                         }
@@ -1280,12 +1272,8 @@ if ((isset($uidReset) && $uidReset) || (isset($cidReset) && $cidReset)) {
                     $is_sessionAdmin     = true;
                 } else {
                     // Am I a session coach for this session?
-<<<<<<< HEAD
-                    $sql = "SELECT session.id, session.id_coach FROM $tbl_session session
-=======
                     $sql = "SELECT session.id, session.id_coach
                             FROM $tbl_session session
->>>>>>> 5df5a8f077... existing CAS integration reimplemented - refs BT#16484
                             INNER JOIN $tbl_session_course sc
                             ON sc.session_id = session.id
                             WHERE session.id = $session_id
