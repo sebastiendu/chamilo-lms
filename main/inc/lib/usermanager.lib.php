@@ -621,9 +621,8 @@ class UserManager
         if (false === $userId) {
             throw new Exception(get_lang('FailedUserCreation'));
         }
-        if (false == self::update_extra_field_value($userId, 'cas_user', $casUser)) {
-            throw new Exception('Could not set the "cas_user" extra field value for the new user '.$loginName);
-        }
+        // Not checking function update_extra_field_value return value because not reliable
+        self::update_extra_field_value($userId, 'cas_user', $casUser);
         return $loginName;
     }
 
@@ -647,13 +646,11 @@ class UserManager
                 $user = extldap_get_chamilo_user($ldapUser);
                 $user['username'] = $login;
                 $user['auth_source'] = CAS_AUTH_SOURCE;
-                $uid = external_add_user($user);
-                if (false !== $uid) {
-                    if (false !== self::update_extra_field_value($uid, 'cas_user', $casUser)) {
-                        return $login;
-                    } else {
-                        throw new Exception('Could not set the "cas_user" extra field value for the new user '.$login);
-                    }
+                $userId = external_add_user($user);
+                if (false !== $userId) {
+                    // Not checking function update_extra_field_value return value because not reliable
+                    self::update_extra_field_value($userId, 'cas_user', $casUser);
+                    return $login;
                 } else {
                     throw new Exception('Could not create the new user '.$login);
                 }
