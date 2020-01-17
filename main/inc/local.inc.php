@@ -178,6 +178,13 @@ $login = isset($_POST["login"]) ? $_POST["login"] : '';
 $logging_in = false;
 
 /*  MAIN CODE  */
+if (array_key_exists('forceCASAuthentication', $_POST)) {
+    unset($_SESSION['_user']);
+    unset($_user);
+    if (api_is_anonymous()) {
+        Session::destroy();
+    }
+}
 
 if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
     // uid is in session => login already done, continue with this value
@@ -244,7 +251,6 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
     }
 
     // IF cas is activated and user isn't logged in
-    $casUser = false;
     if ('true' === api_get_setting('cas_activate')
         && !isset($_user['user_id'])
         && !isset($_POST['login'])
@@ -252,10 +258,16 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
     ) {
 
         // load the CAS system to authenticate the user
-        require_once api_get_path(SYS_PATH).'main/auth/cas/cas_var.inc.php';
+        require_once __DIR__.'/../auth/cas/cas_var.inc.php';
 
         // redirect to CAS server if not authenticated yet and so configured
-        if (is_array($cas) && array_key_exists('force_redirect', $cas) && $cas['force_redirect']) {
+        if (
+            is_array($cas) && array_key_exists('force_redirect', $cas) && $cas['force_redirect']
+            ||
+            array_key_exists('forceCASAuthentication', $_POST)
+            ||
+            array_key_exists('ticket', $_GET)
+        ) {
             phpCAS::forceAuthentication();
         }
 
@@ -295,12 +307,14 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
             if ('true' === api_get_setting("update_user_info_cas_with_ldap")) {
                 UserManager::updateUserFromLDAP($login);
             }
+
+            $_user = api_get_user_info_from_username($login);
+            Session::write('_user', $_user);
+
         } else {
             // not CAS authenticated
         }
-    }
-
-    if ((isset($_POST['login']) && isset($_POST['password'])) || ($casUser)) {
+    } elseif (isset($_POST['login']) && isset($_POST['password'])) {
         // $login && $password are given to log in
         if (empty($login) || !empty($_POST['login'])) {
             $login = $_POST['login'];
@@ -366,14 +380,13 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                         Session::erase('_uid');
                         Session::write('loginFailed', '1');
 
-                        header('Location: '.api_get_path(WEB_PATH).'index.php?loginFailed=1&error=blocked_by_captcha');
-                        exit;
+			header('Location: '.api_get_path(WEB_PATH).'index.php?loginFailed=1&error=blocked_by_captcha');
+			exit;
                     }
                 }
             }
 
-            if ($casUser ||
-                $uData['auth_source'] == PLATFORM_AUTH_SOURCE ||
+            if ($uData['auth_source'] == PLATFORM_AUTH_SOURCE ||
                 $uData['auth_source'] == CAS_AUTH_SOURCE
             ) {
                 $validPassword = isset($password) && UserManager::isPasswordValid(
@@ -383,7 +396,7 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                 );
 
                 // Check the user's password
-                if (($validPassword || $casUser) &&
+                if (($validPassword) &&
                     (trim($login) == $uData['username'])
                 ) {
                     $update_type = UserManager::get_extra_user_data_by_field(
@@ -439,13 +452,7 @@ if (!empty($_SESSION['_user']['user_id']) && !($login || $logout)) {
                                         // https://support.chamilo.org/issues/6124
                                         $location = api_get_path(WEB_PATH)
                                             .'index.php?loginFailed=1&error=access_url_inactive';
-                                        if ($casUser) {
-                                            phpCAS::logoutWithRedirectService($location);
-                                            Event::courseLogout($logoutInfo);
-                                            cas_logout(null, $location);
-                                        } else {
-                                            header('Location: '.$location);
-                                        }
+                                        header('Location: '.$location);
                                         exit;
                                     }
                                 } else {
@@ -1522,9 +1529,7 @@ if (isset($_cid)) {
 }
 
 // direct login to course
-if ((isset($casUser) && $casUser && exist_firstpage_parameter()) ||
-    ($logging_in && exist_firstpage_parameter())
-) {
+if ($logging_in && exist_firstpage_parameter()) {
     $redirectCourseDir = api_get_firstpage_parameter();
     api_delete_firstpage_parameter();    // delete the cookie
 

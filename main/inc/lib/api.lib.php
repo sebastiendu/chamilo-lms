@@ -3218,7 +3218,10 @@ function api_not_allowed($print_headers = false, $message = null)
 
         if (api_is_cas_activated()) {
             $content .= Display::return_message(sprintf(get_lang('YouHaveAnInstitutionalAccount'), api_get_setting("Institution")), '', false);
-            $content .= Display::div("<br/><a href='".get_cas_direct_URL(api_get_course_id())."'>".sprintf(get_lang('LoginWithYourAccount'), api_get_setting("Institution"))."</a><br/><br/>", array('align'=>'center'));
+            $content .= Display::div(
+                Template::displayCASLoginButton(),
+                ['align' => 'center']
+            );
             $content .= Display::return_message(get_lang('YouDontHaveAnInstitutionAccount'));
             $content .= "<p style='text-align:center'><a href='#' onclick='$(this).parent().next().toggle()'>".get_lang('LoginWithExternalAccount')."</a></p>";
             $content .= "<div style='display:none;'>";
@@ -3269,8 +3272,15 @@ function api_not_allowed($print_headers = false, $message = null)
         $msg .= '<h4>'.get_lang('LoginToGoToThisCourse').'</h4>';
         $casEnabled = api_is_cas_activated();
         if ($casEnabled) {
-            $msg .= Display::return_message(sprintf(get_lang('YouHaveAnInstitutionalAccount'), api_get_setting("Institution")), '', false);
-            $msg .= Display::div("<br/><a href='".get_cas_direct_URL(api_get_course_int_id())."'>".getCASLogoHTML()." ".sprintf(get_lang('LoginWithYourAccount'), api_get_setting("Institution"))."</a><br/><br/>", array('align'=>'center'));
+            $msg .= Display::return_message(
+                sprintf(get_lang('YouHaveAnInstitutionalAccount'), api_get_setting("Institution")),
+                '',
+                false
+            );
+            $msg .= Display::div(
+                Template::displayCASLoginButton(),
+                ['align' => 'center']
+            );
             $msg .= Display::return_message(get_lang('YouDontHaveAnInstitutionAccount'));
             $msg .= "<p style='text-align:center'><a href='#' onclick='$(this).parent().next().toggle()'>".get_lang('LoginWithExternalAccount')."</a></p>";
             $msg .= "<div style='display:none;'>";
