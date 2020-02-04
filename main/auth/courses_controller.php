@@ -349,11 +349,9 @@ class CoursesController
     /**
      * Return Session catalog rendered view.
      *
-     * @param string $action
-     * @param string $nameTools
      * @param array  $limit
      */
-    public function sessionList($action, $nameTools, $limit = [])
+    public function sessionList($limit = [])
     {
         $date = isset($_POST['date']) ? $_POST['date'] : date('Y-m-d');
         $hiddenLinks = isset($_GET['hidden_links']) ? $_GET['hidden_links'] == 1 : false;
@@ -439,7 +437,15 @@ class CoursesController
         $settings = api_get_configuration_value('catalog_settings');
         if (empty($settings)) {
             // Default everything is visible
-            $settings = ['sessions' => ['by_title' => true, 'by_date' => true, 'by_tag' => true]];
+            $settings = [
+                'sessions' => [
+                    'by_title' => true,
+                    'by_date' => true,
+                    'by_tag' => true,
+                    'show_session_info' => true,
+                    'show_session_date' => true,
+                ],
+            ];
         }
 
         return $settings;
