@@ -159,6 +159,6 @@
         "symfony-web-dir": "web"
     },
     "config": {
-        "component-dir": "web/assets"
+        "component-dir": "web/assets", "plateform": { "php": "7.3" }
     }
 }
