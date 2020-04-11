@@ -14,7 +14,7 @@ use Doctrine\ORM\Query\Expr\Join;
  */
 class CoursesAndSessionsCatalog
 {
-    const PAGE_LENGTH = 12;
+    const PAGE_LENGTH = 3;
 
     /**
      * Check the configuration for the courses and sessions catalog.
@@ -634,6 +634,36 @@ class CoursesAndSessionsCatalog
             }
             return 0;
         });
+
+        $slice = array_slice($courses, $limit['start'], $limit['length']);
+        global $courseSortValueHTML;
+        $courseSortValueHTML .= '<style>
+table.courseSortValues tr.out {
+  background-color: #ddd;
+  color: #333;
+}
+table.courseSortValues tr.in {
+  background-color: #ffb;
+  color: #004;
+}
+table.courseSortValues th,
+table.courseSortValues td {
+  border: 1px solid #777;
+  padding: 0 .33em;
+}
+table.courseSortValues td {
+  text-align: center;
+}
+</style><table class="courseSortValues"><tr><th></th><th>'.join('</th><th>', $sortKeys).'</th></tr>';
+        foreach ($courses as $course) {
+            $courseSortValueHTML .= '<tr class="'.(in_array($course, $slice) ? 'in' : 'out').'"><th>'.$course['title'].'</th>';
+            foreach ($sortKeys as $sortKey) {
+                $courseSortValueHTML .= '<td>'.(array_key_exists($sortKey, $course) ? $course[$sortKey] : '').'</td>';
+            }
+            $courseSortValueHTML .= '</tr>';
+        }
+        $courseSortValueHTML .= '</table>';
+
         return array_slice($courses, $limit['start'], $limit['length']);
     }
 

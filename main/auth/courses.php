@@ -604,6 +604,9 @@ switch ($action) {
             }
         }
 
+        global $courseSortValueHTML;
+        echo $courseSortValueHTML;
+
         $template = new Template($toolTitle, true, true, false, false, false);
         $template->assign('content', $content);
         $template->assign('courses', $courses);
