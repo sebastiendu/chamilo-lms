@@ -48,7 +48,22 @@ main/cron/incoming/*
 plugin/vchamilo/templates/*
 
 # Stuff updated through composer - Remove just before release
-vendor
-web/assets/*
+#vendor
+#web/assets/*
 node_modules
 yarn.lock
+
+.phpunit.result.cache
+#composer.lock
+installer_chamilo_de_zero.sh
+installer_chamilo_de_zero_final.sh
+installer_chamilo_de_zero_final.txt
+main/admin/exporter_ldap.php
+main/admin/importer_ldap.php
+main/admin/install_php72_and_upgrade_chamilo.sh
+main/admin/ldapContent.json
+main/admin/publish_new_release.sh
+main/admin/upgrade_to_latest_release.sh
+procedure.sh
+procedure.txt
+#web/
