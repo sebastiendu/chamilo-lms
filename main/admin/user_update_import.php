@@ -2,12 +2,13 @@
 /* For licensing terms, see /license.txt */
 
 /**
- * This tool allows platform admins to add users by uploading a CSV or XML file.
+ * This tool allows platform admins to update users by uploading a CSV file.
  *
  * @package chamilo.admin
  */
 
 use Ddeboer\DataImport\Reader\CsvReader;
+use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
@@ -206,22 +207,60 @@ function updateUsers($users, $resetPassword = false)
 }
 
 /**
+ * Anonymizes users listed in the imported data.
+ * Error are logged into $errors for
+ *  - usernames that are not found in the database;
+ *  - usernames for which anonymization fails.
+ *
+ * @param array $usernames the user names of the users to be anonymized
+ * @param array $errors    error list recipient, indexed by username (as returned by validate_data)
+ */
+function anonymizeUsers($usernames, &$errors)
+{
+    /** @var \Chamilo\UserBundle\Entity\User[] $users */
+    $users = UserManager::getRepository()->matching(
+        Criteria::create()->where(
+            Criteria::expr()->in('username', $usernames)
+        )
+    );
+    $foundUsernames = [];
+    foreach ($users as $user) {
+        $foundUsernames[] = $user->getUsername();
+        try {
+            if (!UserManager::anonymize($user->getId())) {
+                $errors[$user->getUsername()][] = get_lang('ErrorsFound');
+            }
+        } catch (Exception $exception) {
+            $errors[$user->getUsername()][] = $exception->getMessage();
+        }
+    }
+    foreach (array_diff($usernames, $foundUsernames) as $usernameNotFound) {
+        $errors[$usernameNotFound][] = get_lang('NotFound');
+    }
+}
+
+/**
  * Read the CSV-file.
  *
- * @param string $file Path to the CSV-file
+ * @param string $file                 Path to the CSV-file
+ * @param bool   $enforceOneColumnRule Make sure there is only one column
  *
- * @throws Exception
- *
- * @return array All userinformation read from the file
+ * @return array All user information read from the file
+ * @throws Exception on missing mandatory column 'UserName' or wrong number of columns
  */
-function parse_csv_data($file)
+function parse_csv_data($file, $enforceOneColumnRule = false)
 {
     $file = new SplFileObject($file);
     $csv = new CsvReader($file, ';');
     $csv->setHeaderRowNumber(0);
 
-    if (!in_array('UserName', $csv->getColumnHeaders())) {
+    $columnHeaders = $csv->getColumnHeaders();
+    if (!in_array('UserName', $columnHeaders)) {
         throw new Exception(get_lang("UserNameMandatory"));
+    }
+
+    if ($enforceOneColumnRule && count($columnHeaders) > 1) {
+        throw new Exception(get_lang('CSVAnonymizeIncorrectFormatOnlyProvideUsername'));
     }
 
     $users = [];
@@ -237,27 +276,6 @@ function parse_csv_data($file)
     return $users;
 }
 
-function parse_xml_data($file)
-{
-    $crawler = new Crawler();
-    $crawler->addXmlContent(file_get_contents($file));
-    $crawler = $crawler->filter('Contacts > Contact ');
-    $array = [];
-    foreach ($crawler as $domElement) {
-        $row = [];
-        foreach ($domElement->childNodes as $node) {
-            if ($node->nodeName != '#text') {
-                $row[$node->nodeName] = $node->nodeValue;
-            }
-        }
-        if (!empty($row)) {
-            $array[] = $row;
-        }
-    }
-
-    return $array;
-}
-
 $this_section = SECTION_PLATFORM_ADMIN;
 api_protect_admin_script(true, null);
 
@@ -267,7 +285,7 @@ if (isset($extAuthSource) && is_array($extAuthSource)) {
     $defined_auth_sources = array_merge($defined_auth_sources, array_keys($extAuthSource));
 }
 
-$tool_name = get_lang('ImportUserListXMLCSV');
+$tool_name = get_lang('EditUserListCSV');
 $interbreadcrumb[] = ["url" => 'index.php', "name" => get_lang('PlatformAdmin')];
 
 set_time_limit(0);
@@ -277,11 +295,27 @@ $form = new FormValidator('user_update_import', 'post', api_get_self());
 $form->addElement('header', $tool_name);
 $form->addFile('import_file', get_lang('ImportFileLocation'), ['accept' => 'text/csv', 'id' => 'import_file']);
 $form->addCheckBox('reset_password', '', get_lang('AutoGeneratePassword'));
+$form->addGroup(
+    [
+        $form->createElement('radio', 'action', null, get_lang('Edit'), 'edit'),
+        $anonymizeRadio = $form->createElement('radio', 'action', null, get_lang('Anonymize'), 'anonymize'),
+    ],
+    'actions',
+    get_lang('Action')
+);
+$form->setAttribute(
+    'onsubmit',
+    'javascript:'
+    .'!document.forms[0].elements["'.$anonymizeRadio->getAttribute('id').'"].checked'
+    .'||'.
+    'confirm("'.get_lang('AreYouSureToAnonymize').'")'
+);
 
 if ($form->validate() && Security::check_token('post')) {
     Security::clear_token();
 
     $formValues = $form->exportValues();
+    $action = $formValues['actions']['action'];
 
     if (empty($_FILES['import_file']) || empty($_FILES['import_file']['size'])) {
         header('Location: '.api_get_self());
@@ -292,7 +326,7 @@ if ($form->validate() && Security::check_token('post')) {
 
     if ($uploadInfo['extension'] !== 'csv') {
         Display::addFlash(
-            Display::return_message(get_lang('YouMustImportAFileAccordingToSelectedOption'), 'error')
+            Display::return_message(get_lang('NotCSV'), 'error')
         );
 
         header('Location: '.api_get_self());
@@ -300,7 +334,7 @@ if ($form->validate() && Security::check_token('post')) {
     }
 
     try {
-        $users = parse_csv_data($_FILES['import_file']['tmp_name']);
+        $users = parse_csv_data($_FILES['import_file']['tmp_name'], 'anonymize' === $action);
     } catch (Exception $exception) {
         Display::addFlash(
             Display::return_message($exception->getMessage(), 'error')
@@ -320,7 +354,11 @@ if ($form->validate() && Security::check_token('post')) {
         }
     }
 
-    updateUsers($usersToUpdate, isset($formValues['reset_password']));
+    if ('anonymize' === $action) {
+        anonymizeUsers(array_column($usersToUpdate, 'UserName'), $errors);
+    } else { // 'edit'
+        updateUsers($usersToUpdate, isset($formValues['reset_password']));
+    }
 
     if (empty($errors)) {
         Display::addFlash(
@@ -335,7 +373,7 @@ if ($form->validate() && Security::check_token('post')) {
         }
 
         Display::addFlash(
-            Display::return_message(get_lang('FileImportedJustUsersThatAreNotRegistered'), 'warning')
+            Display::return_message(get_lang('ErrorsFound'), 'warning')
         );
         Display::addFlash(
             Display::return_message($warningMessage, 'warning', false)
